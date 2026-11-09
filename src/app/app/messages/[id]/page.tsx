@@ -1,3 +1,4 @@
+import { Eye } from "lucide-react";
 import { AutoRefresh } from "@/components/AutoRefresh";
 import { notFound } from "next/navigation";
 import { getViewer, requireViewer } from "@/server/auth";
@@ -37,13 +38,13 @@ export default async function Thread({ params }: { params: Promise<{ id: string 
     <>
       <AutoRefresh seconds={10} />
       <PageHeader title={t.subject} subtitle={t.participants.map((p) => `${p.user.name} (${ROLE_LABEL[p.user.role]})`).join("، ")} />
-      {oversight.length > 0 && <p className="mb-3 rounded-xl bg-violet-50 p-2 text-xs text-violet-800">👁 نظارت سرپرست فعال است: {oversight.map((p) => p.user.name).join("، ")} همه پیام‌ها را می‌بیند.</p>}
+      {oversight.length > 0 && <p className="mb-3 flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-xs text-violet-800"><Eye aria-hidden className="inline size-3.5 shrink-0 align-[-2px]" /> نظارت سرپرست فعال است: {oversight.map((p) => p.user.name).join("، ")} همه پیام‌ها را می‌بیند.</p>}
       <ul className="space-y-2">
         {t.messages.map((m) => {
           const mine = m.authorId === v.id;
           return (
             <li key={m.id} className={`flex ${mine ? "justify-start" : "justify-end"}`}>
-              <div className={`max-w-[85%] rounded-2xl px-4 py-2 ${mine ? "bg-brand-600 text-white" : "border border-slate-200 bg-white"}`}>
+              <div className={`max-w-[85%] rounded-2xl px-4 py-2 ${mine ? "bg-brand-600 text-white" : "border border-slate-200 bg-surface"}`}>
                 <p className="whitespace-pre-wrap text-sm">{m.body}</p>
                 <p className={`mt-1 text-[11px] ${mine ? "text-brand-100" : "text-slate-500"}`}>{m.author.name} · {faDateTime(m.createdAt)}</p>
               </div>

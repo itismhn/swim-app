@@ -4,6 +4,7 @@ import { athleteWhere, resultWhere } from "@/server/authz";
 import { isStaff } from "@/server/viewer";
 import { eventLabel, performanceView } from "@/server/performance";
 import { ActionForm } from "@/components/ActionForm";
+import { ConfirmButton } from "@/components/ConfirmButton";
 import { ResultTypeBadge } from "@/components/badges";
 import { PerformanceChart } from "@/components/PerformanceChart";
 import { Empty, Field, PageHeader, Section } from "@/components/ui";
@@ -103,7 +104,7 @@ export default async function PerformancePage({ searchParams }: { searchParams: 
                       <td dir="ltr" className="text-end text-xs text-slate-500">{r.splitsMs.map(formatTime).join(" / ") || "—"}</td>
                       <td className="text-xs">{r.venue ?? "—"}</td>
                       <td className="text-xs">{r.recordedBy.name}</td>
-                      {staff && <td><form action={async () => { "use server"; await deleteResult(r.id); }}><button className="text-xs text-rose-600">حذف</button></form></td>}
+                      {staff && <td><form action={async () => { "use server"; await deleteResult(r.id); }}><ConfirmButton message="این رکورد حذف شود؟" /></form></td>}
                     </tr>
                   ))}
                 </tbody>

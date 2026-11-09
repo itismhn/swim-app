@@ -1,3 +1,4 @@
+import { Plus, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { requireViewer } from "@/server/auth";
 import { db } from "@/server/db";
@@ -21,7 +22,7 @@ export default async function Dryland() {
   ]);
   return (
     <>
-      <PageHeader title="تمرین خشکی و قدرتی" actions={staff && <Link href="/app/dryland/new" className="btn-primary">+ برنامه جدید</Link>} subtitle="این بخش جایگزین تشخیص یا درمان پزشکی نیست. در صورت درد، تمرین را متوقف کنید و به مربی اطلاع دهید." />
+      <PageHeader title="تمرین خشکی و قدرتی" actions={staff && <Link href="/app/dryland/new" className="btn-primary"><Plus aria-hidden />برنامه جدید</Link>} subtitle="این بخش جایگزین تشخیص یا درمان پزشکی نیست. در صورت درد، تمرین را متوقف کنید و به مربی اطلاع دهید." />
       <div className="grid gap-4 lg:grid-cols-2">
         <Section title="برنامه‌ها">
           {plans.length === 0 ? <Empty title="برنامه‌ای وجود ندارد" /> : (
@@ -46,12 +47,12 @@ export default async function Dryland() {
               <li key={e.id} className="rounded-xl bg-slate-50 p-3 text-sm">
                 <p className="font-medium">{e.name} <span className="text-xs text-slate-500">· {e.muscleGroup}</span></p>
                 {e.description && <p className="text-xs">{e.description}</p>}
-                {e.safetyNotes && <p className="mt-1 text-xs text-amber-800">⚠ {e.safetyNotes}</p>}
+                {e.safetyNotes && <p className="mt-1 text-xs text-amber-800"><TriangleAlert aria-hidden className="inline size-3.5 shrink-0 align-[-2px]" /> {e.safetyNotes}</p>}
                 <ExerciseMediaView media={e.media} name={e.name} />
                 {e.mediaUrl && <a href={e.mediaUrl} target="_blank" rel="noopener noreferrer" className="link text-xs">پیوند خارجی ↗</a>}
                 {staff && (
                   <details className="mt-1">
-                    <summary className="cursor-pointer text-xs text-brand-600">{e.media ? "تعویض / حذف فایل" : "بارگذاری تصویر یا ویدیو"}</summary>
+                    <summary className="cursor-pointer text-xs text-brand-600 dark:text-brand-400">{e.media ? "تعویض / حذف فایل" : "بارگذاری تصویر یا ویدیو"}</summary>
                     <ActionForm action={setExerciseMedia.bind(null, e.id)} className="mt-2 space-y-2" submitLabel="بارگذاری" submitClassName="btn-secondary btn-sm">
                       <input type="file" name="media" accept="image/jpeg,image/png,image/webp,video/mp4" className="block w-full text-xs" aria-label="فایل" />
                       <FieldError name="media" />
@@ -64,7 +65,7 @@ export default async function Dryland() {
           </ul>
           {staff && (
             <details className="mt-3">
-              <summary className="btn-secondary btn-sm cursor-pointer">+ حرکت جدید</summary>
+              <summary className="btn-secondary btn-sm cursor-pointer"><Plus aria-hidden />حرکت جدید</summary>
               <ActionForm action={addExercise} className="mt-3 grid gap-3" resetOnSuccess submitLabel="افزودن">
                 <Field label="نام حرکت" name="name" required />
                 <Field label="گروه عضلانی" name="muscleGroup" required />

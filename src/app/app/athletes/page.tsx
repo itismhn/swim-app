@@ -1,10 +1,11 @@
+import { Plus, Search } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Prisma, Stroke, MembershipStatus } from "@prisma/client";
 import { requireViewer } from "@/server/auth";
 import { db } from "@/server/db";
 import { athleteWhere, groupWhere } from "@/server/authz";
-import { Badge, Empty, PageHeader, SampleBadge } from "@/components/ui";
+import { Badge, Empty, PageHeader, SampleBadge, Avatar } from "@/components/ui";
 import { MEMBERSHIP_LABEL, STROKE_LABEL } from "@/lib/domain/labels";
 import { ageOn, faNum } from "@/lib/domain/jalali";
 
@@ -37,9 +38,12 @@ export default async function AthletesPage({ searchParams }: { searchParams: Pro
 
   return (
     <>
-      <PageHeader title="ورزشکاران" subtitle={`${faNum(athletes.length)} نفر در دسترس شما`} actions={<Link href="/app/athletes/new" className="btn-primary">+ ورزشکار جدید</Link>} />
+      <PageHeader title="ورزشکاران" subtitle={`${faNum(athletes.length)} نفر در دسترس شما`} actions={<Link href="/app/athletes/new" className="btn-primary"><Plus aria-hidden />ورزشکار جدید</Link>} />
       <form className="card mb-4 grid gap-3 sm:grid-cols-5" role="search">
-        <input name="q" defaultValue={q} placeholder="جستجوی نام…" className="input sm:col-span-2" aria-label="جستجو" />
+        <div className="relative sm:col-span-2">
+          <Search aria-hidden className="pointer-events-none absolute start-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+          <input name="q" defaultValue={q} placeholder="جستجوی نام…" className="input ps-10" aria-label="جستجو" />
+        </div>
         <select name="group" defaultValue={sp.group ?? ""} className="input" aria-label="گروه">
           <option value="">همه گروه‌ها</option>{groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
         </select>
@@ -59,9 +63,10 @@ export default async function AthletesPage({ searchParams }: { searchParams: Pro
         <ul className="grid gap-3 md:grid-cols-2">
           {athletes.map((a) => (
             <li key={a.id}>
-              <Link href={`/app/athletes/${a.id}`} className="card flex items-center justify-between gap-3 hover:border-brand-200">
-                <div>
-                  <p className="font-medium">{a.user.name} {a.user.isSample && <SampleBadge />}</p>
+              <Link href={`/app/athletes/${a.id}`} className="card card-hover flex items-center gap-3.5">
+                <Avatar name={a.user.name} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold text-ink">{a.user.name} {a.user.isSample && <SampleBadge />}</p>
                   <p className="mt-1 text-xs text-slate-500">{a.group?.name ?? "بدون گروه"} · {faNum(ageOn(a.birthDate))} ساله</p>
                   <div className="mt-2 flex flex-wrap gap-1">{a.specialtyStrokes.map((s) => <Badge key={s} tone="blue">{STROKE_LABEL[s]}</Badge>)}</div>
                 </div>

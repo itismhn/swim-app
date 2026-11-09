@@ -1,0 +1,14 @@
+# VPS override: no host port; attach the app to the shared Caddy network
+# (the coaching-app stack's Caddy serves swim.dinotech.click -> swim-app-1:3000).
+#   docker compose -f docker-compose.yml -f docker-compose.vps.yml --env-file .env.docker up -d --build
+services:
+  app:
+    ports: !reset []
+    networks:
+      - default
+      - caddy-network
+
+networks:
+  caddy-network:
+    external: true
+    name: coaching-app_default

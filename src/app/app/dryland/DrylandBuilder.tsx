@@ -1,4 +1,5 @@
 "use client";
+import { Lock, Plus } from "lucide-react";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { saveDrylandPlan } from "./actions";
@@ -67,7 +68,7 @@ export function DrylandBuilder({
                 <button type="button" className="btn-secondary btn-sm" aria-label="بالا" onClick={() => move(i, -1)} disabled={i === 0}>↑</button>
                 <button type="button" className="btn-secondary btn-sm" aria-label="پایین" onClick={() => move(i, 1)} disabled={i === p.items.length - 1}>↓</button>
                 {it.locked
-                  ? <span className="self-center text-slate-400" title="ورزشکاران برای این حرکت گزارش ثبت کرده‌اند">🔒 دارای گزارش</span>
+                  ? <span className="self-center text-slate-400" title="ورزشکاران برای این حرکت گزارش ثبت کرده‌اند"><Lock aria-hidden className="inline size-3.5 align-[-2px]" /> دارای گزارش</span>
                   : <button type="button" className="text-rose-600" onClick={() => upd((d) => { d.items.splice(i, 1); })}>حذف</button>}
               </div>
             </div>
@@ -86,9 +87,9 @@ export function DrylandBuilder({
           </li>
         ))}
       </ol>
-      <button type="button" className="btn-secondary" onClick={() => upd((d) => { d.items.push(blank()); })} disabled={p.items.length >= 20}>+ افزودن حرکت</button>
+      <button type="button" className="btn-secondary" onClick={() => upd((d) => { d.items.push(blank()); })} disabled={p.items.length >= 20}><Plus aria-hidden />افزودن حرکت</button>
 
-      <div className="fixed inset-x-0 bottom-14 z-20 border-t border-slate-200 bg-white/95 p-3 backdrop-blur md:bottom-0 md:start-60">
+      <div className="fixed inset-x-0 bottom-14 z-20 border-t border-slate-200 bg-surface/95 p-3 backdrop-blur md:bottom-0 md:start-60">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2">
           <p className="text-sm">{p.items.length.toLocaleString("fa-IR")} حرکت</p>
           <div className="flex gap-2">

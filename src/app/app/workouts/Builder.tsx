@@ -1,4 +1,5 @@
 "use client";
+import { Plus, TriangleAlert } from "lucide-react";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { INTENSITY_LABEL, SECTION_LABEL, STROKE_LABEL } from "@/lib/domain/labels";
@@ -75,7 +76,7 @@ export function Builder({
             </select>
             <div className="flex items-center gap-2 text-sm">
               <span className="rounded-lg bg-brand-50 px-2 py-1 font-medium text-brand-700">{sectionMeters({ sets: calc(sec.sets) }).toLocaleString("fa-IR")} متر</span>
-              <button type="button" className="text-xs text-rose-600" onClick={() => upd((d) => { d.sections.splice(si, 1); })}>حذف بخش</button>
+              <button type="button" className="inline-flex min-h-10 items-center px-2 text-xs text-rose-600" onClick={() => { if (window.confirm("این بخش و همه ست‌هایش حذف شود؟")) upd((d) => { d.sections.splice(si, 1); }); }}>حذف بخش</button>
             </div>
           </div>
           <div className="space-y-3">
@@ -104,7 +105,7 @@ export function Builder({
                     <div className="ms-auto pb-2 text-sm font-bold text-brand-700">= {meters.toLocaleString("fa-IR")} متر</div>
                   </div>
                   <p className="mt-1 text-xs text-slate-500">هر تکرار: {repMeters({ segments: s.segments.map((g) => ({ meters: num(g.meters) })) }).toLocaleString("fa-IR")} متر</p>
-                  {warn && <p className="mt-1 text-xs text-amber-700">⚠ {warn}</p>}
+                  {warn && <p className="mt-1 text-xs text-amber-700"><TriangleAlert aria-hidden className="inline size-3.5 shrink-0 align-[-2px]" /> {warn}</p>}
                   <div className="mt-2 grid gap-2 sm:grid-cols-4">
                     <select className="input" value={s.stroke} onChange={(e) => setU((x) => { x.stroke = e.target.value as SetI["stroke"]; })} aria-label="شنا">
                       {STROKES.map((k) => <option key={k} value={k}>{STROKE_LABEL[k]}</option>)}
@@ -124,26 +125,26 @@ export function Builder({
                       </label>
                     ))}
                   </div>
-                  <div className="mt-2 flex gap-3 text-xs">
-                    <button type="button" className="text-brand-600" onClick={() => upd((d) => { d.sections[si].sets.splice(xi + 1, 0, structuredClone(s)); })}>تکثیر ست</button>
-                    <button type="button" className="text-rose-600" onClick={() => upd((d) => { d.sections[si].sets.splice(xi, 1); })}>حذف ست</button>
+                  <div className="mt-1 flex gap-1 text-xs">
+                    <button type="button" className="inline-flex min-h-10 items-center px-2 text-brand-600 dark:text-brand-400" onClick={() => upd((d) => { d.sections[si].sets.splice(xi + 1, 0, structuredClone(s)); })}>تکثیر ست</button>
+                    <button type="button" className="inline-flex min-h-10 items-center px-2 text-rose-600" onClick={() => upd((d) => { d.sections[si].sets.splice(xi, 1); })}>حذف ست</button>
                   </div>
                 </div>
               );
             })}
           </div>
-          <button type="button" className="btn-secondary btn-sm mt-3" onClick={() => upd((d) => { d.sections[si].sets.push(newSet()); })}>+ افزودن ست</button>
+          <button type="button" className="btn-secondary btn-sm mt-3" onClick={() => upd((d) => { d.sections[si].sets.push(newSet()); })}><Plus aria-hidden />افزودن ست</button>
         </section>
       ))}
       <div className="flex flex-wrap gap-2">
-        <button type="button" className="btn-secondary" onClick={() => upd((d) => { d.sections.push({ kind: "MAIN", title: "", sets: [newSet()] }); })}>+ افزودن بخش</button>
+        <button type="button" className="btn-secondary" onClick={() => upd((d) => { d.sections.push({ kind: "MAIN", title: "", sets: [newSet()] }); })}><Plus aria-hidden />افزودن بخش</button>
         <div className="flex gap-1">
           <input className="input w-40" placeholder="تجهیزات جدید" value={newEq} onChange={(e) => setNewEq(e.target.value)} aria-label="نام تجهیزات جدید" />
           <button type="button" className="btn-secondary" disabled={!newEq.trim() || pending} onClick={addEq}>افزودن تجهیزات</button>
         </div>
       </div>
 
-      <div className="fixed inset-x-0 bottom-14 z-20 border-t border-slate-200 bg-white/95 p-3 backdrop-blur md:bottom-0 md:start-60">
+      <div className="fixed inset-x-0 bottom-14 z-20 border-t border-slate-200 bg-surface/95 p-3 backdrop-blur md:bottom-0 md:start-60">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2">
           <p className="font-bold">حجم برنامه‌ریزی‌شده: <span className="text-brand-700">{total.toLocaleString("fa-IR")} متر</span></p>
           <div className="flex gap-2">

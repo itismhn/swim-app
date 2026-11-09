@@ -1,3 +1,4 @@
+import { Plus } from "lucide-react";
 import Link from "next/link";
 import type { PlanStatus } from "@prisma/client";
 import { requireViewer } from "@/server/auth";
@@ -22,11 +23,11 @@ export default async function Workouts({ searchParams }: { searchParams: Promise
   });
   return (
     <>
-      <PageHeader title="برنامه‌های تمرین در آب" actions={staff && <Link href="/app/workouts/new" className="btn-primary">+ برنامه جدید</Link>} />
+      <PageHeader title="برنامه‌های تمرین در آب" actions={staff && <Link href="/app/workouts/new" className="btn-primary"><Plus aria-hidden />برنامه جدید</Link>} />
       {staff && (
         <nav className="mb-4 flex gap-2 text-sm">
           {[["", "همه"], ["DRAFT", "پیش‌نویس"], ["PUBLISHED", "منتشرشده"]].map(([k, l]) => (
-            <Link key={k} href={k ? `?status=${k}` : "?"} className={`btn-sm btn ${status === k || (!status && !k) ? "bg-brand-600 text-white" : "border border-slate-300 bg-white"}`}>{l}</Link>
+            <Link key={k} href={k ? `?status=${k}` : "?"} className={`btn-sm btn ${status === k || (!status && !k) ? "bg-brand-600 text-white" : "border border-slate-300 bg-surface"}`}>{l}</Link>
           ))}
         </nav>
       )}

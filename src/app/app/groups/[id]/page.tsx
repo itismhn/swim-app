@@ -5,6 +5,7 @@ import { db } from "@/server/db";
 import { groupWhere } from "@/server/authz";
 import { STAFF } from "@/server/viewer";
 import { ActionForm } from "@/components/ActionForm";
+import { ConfirmButton } from "@/components/ConfirmButton";
 import { Badge, Field, PageHeader, Section } from "@/components/ui";
 import { MEMBERSHIP_LABEL, WEEKDAY_LABEL } from "@/lib/domain/labels";
 import { faNum } from "@/lib/domain/jalali";
@@ -50,7 +51,7 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
             {g.slots.map((s) => (
               <li key={s.id} className="flex items-center justify-between">
                 <span>{WEEKDAY_LABEL[s.weekday]} ساعت {faNum(s.startTime)} — {faNum(s.minutes)} دقیقه</span>
-                {isAdmin && <form action={async () => { "use server"; await removeSlot(s.id); }}><button className="text-xs text-rose-600">حذف</button></form>}
+                {isAdmin && <form action={async () => { "use server"; await removeSlot(s.id); }}><ConfirmButton message="این زمان تمرین حذف شود؟" /></form>}
               </li>
             ))}
           </ul>
@@ -70,7 +71,7 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
             {g.coaches.map((c) => (
               <li key={c.userId} className="flex items-center justify-between">
                 {c.user.name}
-                {isAdmin && <ActionForm action={setGroupCoach.bind(null, g.id)}><input type="hidden" name="userId" value={c.userId} /><input type="hidden" name="op" value="remove" /><button className="text-xs text-rose-600">حذف</button></ActionForm>}
+                {isAdmin && <ActionForm action={setGroupCoach.bind(null, g.id)}><input type="hidden" name="userId" value={c.userId} /><input type="hidden" name="op" value="remove" /><ConfirmButton message="این مربی از گروه حذف شود؟" /></ActionForm>}
               </li>
             ))}
           </ul>

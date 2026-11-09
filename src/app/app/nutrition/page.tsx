@@ -1,3 +1,4 @@
+import { BookOpen, Lock, Plus } from "lucide-react";
 import Link from "next/link";
 import { requireViewer } from "@/server/auth";
 import { db } from "@/server/db";
@@ -22,7 +23,7 @@ export default async function Nutrition() {
     <>
       <PageHeader title="تغذیه ورزشی" subtitle="محتوای آموزشی عمومی، جدا از مشاوره فردی متخصص. ردیابی کالری، رژیم محدودکننده یا هدف کاهش وزن در این سامانه فعال نیست." />
       <div className="grid gap-4 lg:grid-cols-2">
-        <Section title="📚 آموزش عمومی تغذیه">
+        <Section icon={BookOpen} title="آموزش عمومی تغذیه">
           <p className="mb-3 rounded-lg bg-slate-100 p-2 text-xs text-slate-600">این مطالب عمومی‌اند و جایگزین توصیه فردی متخصص نیستند.</p>
           <div className="space-y-2">
             {articles.map((a) => (
@@ -34,7 +35,7 @@ export default async function Nutrition() {
           </div>
           {(v.role === "NUTRITIONIST" || v.role === "ADMIN") && (
             <details className="mt-3">
-              <summary className="btn-secondary btn-sm cursor-pointer">+ مطلب آموزشی جدید</summary>
+              <summary className="btn-secondary btn-sm cursor-pointer"><Plus aria-hidden />مطلب آموزشی جدید</summary>
               <ActionForm action={publishArticle} className="mt-3 space-y-3" resetOnSuccess submitLabel="انتشار">
                 <Field label="عنوان" name="title" /><Field label="خلاصه" name="summary" /><Field label="متن" name="body" as="textarea" rows={5} />
               </ActionForm>
@@ -57,13 +58,13 @@ export default async function Nutrition() {
           )}
           {canAsk && athletes.length > 0 && (
             <details className="mt-3" open={requests.length === 0}>
-              <summary className="btn-primary btn-sm cursor-pointer">+ درخواست مشاوره</summary>
+              <summary className="btn-primary btn-sm cursor-pointer"><Plus aria-hidden />درخواست مشاوره</summary>
               <ActionForm action={submitNutritionRequest} className="mt-3 space-y-3" submitLabel="ارسال درخواست">
                 <Field label="ورزشکار" name="athleteId" as="select">{athletes.map((a) => <option key={a.id} value={a.id}>{a.user.name}</option>)}</Field>
                 <Field label="موضوع" name="topic" placeholder="مثلاً: تغذیه روز مسابقه" />
                 <Field label="سؤال" name="question" as="textarea" />
                 <fieldset className="rounded-xl border border-amber-200 bg-amber-50/50 p-3">
-                  <legend className="px-1 text-xs font-medium text-amber-900">🔒 اطلاعات حساس (اختیاری)</legend>
+                  <legend className="px-1 text-xs font-medium text-amber-900"><Lock aria-hidden className="inline size-3.5 shrink-0 align-[-2px]" /> اطلاعات حساس (اختیاری)</legend>
                   <Field label="حساسیت غذایی" name="allergies" hint={v.role === "ATHLETE" ? "برای ورزشکاران زیر ۱۸ سال، این مورد را سرپرست ثبت می‌کند." : "فقط متخصص ارجاع‌شده آن را می‌بیند."} />
                   <label className="mt-2 flex items-start gap-2 text-xs"><input type="checkbox" name="consent" className="mt-0.5" /> به‌عنوان سرپرست، با ثبت و دسترسی محدود به این اطلاعات موافقم.</label>
                 </fieldset>

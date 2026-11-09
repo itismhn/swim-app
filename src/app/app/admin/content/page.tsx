@@ -1,13 +1,14 @@
 import { requireViewer } from "@/server/auth";
 import { db } from "@/server/db";
 import { ActionForm } from "@/components/ActionForm";
+import { ConfirmButton } from "@/components/ConfirmButton";
 import { Field, PageHeader, Section } from "@/components/ui";
 import { addPublicItem, deletePublicItem } from "../actions";
 
 export const metadata = { title: "محتوای عمومی" };
 
 const Del = ({ kind, id }: { kind: "faq" | "program" | "coach"; id: string }) => (
-  <form action={async () => { "use server"; await deletePublicItem(kind, id); }}><button className="text-xs text-rose-600">حذف</button></form>
+  <form action={async () => { "use server"; await deletePublicItem(kind, id); }}><ConfirmButton /></form>
 );
 
 export default async function Content() {

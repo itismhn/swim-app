@@ -1,4 +1,5 @@
 import { ZodError } from "zod";
+import "./zod-fa"; // installs the Persian zod error map
 
 /** Uniform result returned by every server action, consumed by <ActionForm>. */
 export type ActionResult = { ok: boolean; message?: string; fieldErrors?: Record<string, string>; redirectTo?: string; data?: Record<string, unknown> } | null;

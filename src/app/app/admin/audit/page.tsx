@@ -31,7 +31,7 @@ export default async function Audit({ searchParams }: { searchParams: Promise<{ 
                   <td dir="ltr" className="text-start font-mono text-xs">{r.action}</td>
                   <td dir="ltr" className="text-start font-mono text-xs">{r.entity}</td>
                   <td>
-                    <details><summary className="cursor-pointer text-xs text-brand-600">نمایش</summary>
+                    <details><summary className="cursor-pointer text-xs text-brand-600 dark:text-brand-400">نمایش</summary>
                       <pre dir="ltr" className="mt-1 max-w-md overflow-x-auto whitespace-pre-wrap text-start text-[11px]">{JSON.stringify({ before: r.before, after: r.after }, null, 1)}</pre>
                     </details>
                   </td>

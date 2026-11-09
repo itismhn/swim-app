@@ -1,3 +1,4 @@
+import { BadgeCheck, Lock } from "lucide-react";
 import { notFound } from "next/navigation";
 import { getViewer, requireViewer } from "@/server/auth";
 import { db } from "@/server/db";
@@ -41,7 +42,7 @@ export default async function NutritionRequestPage({ params }: { params: Promise
             const pro = m.author.role === "NUTRITIONIST";
             return (
               <div key={m.id} className={`card ${pro ? "border-emerald-200 bg-emerald-50/40" : ""}`}>
-                {pro && <p className="mb-1 text-xs font-medium text-emerald-800">👩‍⚕️ توصیه فردی متخصص تغذیه — مخصوص همین ورزشکار</p>}
+                {pro && <p className="mb-1 text-xs font-medium text-emerald-800"><BadgeCheck aria-hidden className="inline size-3.5 shrink-0 align-[-2px]" /> توصیه فردی متخصص تغذیه — مخصوص همین ورزشکار</p>}
                 <p className="whitespace-pre-wrap text-sm">{m.body}</p>
                 <p className="mt-2 text-xs text-slate-500">{m.author.name} · {faDateTime(m.createdAt)}</p>
               </div>
@@ -55,7 +56,7 @@ export default async function NutritionRequestPage({ params }: { params: Promise
           )}
         </div>
         <div className="space-y-3">
-          <Section title="🔒 اطلاعات محرمانه">
+          <Section icon={Lock} title="اطلاعات محرمانه">
             {!r.guardianConsent ? <p className="text-sm text-slate-500">اطلاعات حساسی با رضایت سرپرست ثبت نشده است.</p>
               : showAllergies ? <p className="text-sm">حساسیت غذایی: {r.allergies}</p>
               : <p className="text-sm text-slate-500">فقط برای متخصص ارجاع‌شده و خانواده قابل مشاهده است.</p>}

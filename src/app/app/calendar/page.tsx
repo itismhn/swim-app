@@ -49,7 +49,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
           const isToday = d.getTime() === today.getTime();
           return (
             <section key={i} className={`card ${isToday ? "border-brand-500 ring-2 ring-brand-100" : ""}`}>
-              <h2 className="mb-2 text-sm font-bold">{WEEKDAY_LABEL[i]} {faDate(d)} {isToday && <span className="text-brand-600">(امروز)</span>}</h2>
+              <h2 className="mb-2 text-sm font-bold">{WEEKDAY_LABEL[i]} {faDate(d)} {isToday && <span className="text-brand-600 dark:text-brand-400">(امروز)</span>}</h2>
               {items.length === 0 ? <p className="text-xs text-slate-400">جلسه‌ای نیست</p> : (
                 <ul className="space-y-2">
                   {items.map((s) => (
@@ -68,7 +68,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
                       </div>
                       {staff && (
                         <details className="mt-2 text-sm">
-                          <summary className="cursor-pointer text-xs text-slate-500">مدیریت جلسه</summary>
+                          <summary className="flex min-h-10 cursor-pointer items-center text-xs text-slate-500">مدیریت جلسه</summary>
                           <div className="mt-2 grid gap-3 md:grid-cols-2">
                             <ActionForm action={setSessionStatus.bind(null, s.id)} className="space-y-2" submitLabel="ثبت وضعیت" submitClassName="btn-secondary btn-sm">
                               <Field label="وضعیت" name="status" as="select" defaultValue={s.status}>

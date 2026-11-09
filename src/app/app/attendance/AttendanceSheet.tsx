@@ -1,4 +1,5 @@
 "use client";
+import { CheckCheck } from "lucide-react";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ATTENDANCE_LABEL } from "@/lib/domain/labels";
@@ -34,7 +35,7 @@ export function AttendanceSheet({ sessionId, athletes }: { sessionId: string; at
     <div>
       <div className="mb-3 flex flex-wrap gap-2">
         <button type="button" className="btn-secondary btn-sm" onClick={() => athletes.forEach((a) => !state[a.id].status && set(a.id, { status: "PRESENT" }))}>
-          ✓ بقیه حاضر
+          <CheckCheck aria-hidden /> بقیه حاضر
         </button>
         <span className="self-center text-xs text-slate-500">{unmarked ? `${unmarked.toLocaleString("fa-IR")} نفر بدون وضعیت` : "همه ثبت شده‌اند"}</span>
       </div>
@@ -45,12 +46,12 @@ export function AttendanceSheet({ sessionId, athletes }: { sessionId: string; at
             <div className="grid grid-cols-5 gap-1" role="radiogroup" aria-label={`وضعیت ${a.name}`}>
               {ORDER.map((s) => (
                 <button key={s} type="button" role="radio" aria-checked={state[a.id].status === s} onClick={() => set(a.id, { status: s })}
-                  className={`min-h-12 rounded-lg border text-xs font-medium ${state[a.id].status === s ? COLORS[s] : "border-slate-200 bg-white text-slate-700"}`}>
+                  className={`min-h-12 rounded-lg border text-xs font-medium ${state[a.id].status === s ? COLORS[s] : "border-slate-200 bg-surface text-slate-700"}`}>
                   {ATTENDANCE_LABEL[s]}
                 </button>
               ))}
             </div>
-            <input className="input mt-2 min-h-9 text-xs" placeholder="یادداشت (اختیاری)" value={state[a.id].note} onChange={(e) => set(a.id, { note: e.target.value })} aria-label={`یادداشت ${a.name}`} />
+            <input className="input mt-2 min-h-9 text-base sm:text-xs" placeholder="یادداشت (اختیاری)" value={state[a.id].note} onChange={(e) => set(a.id, { note: e.target.value })} aria-label={`یادداشت ${a.name}`} />
           </li>
         ))}
       </ul>

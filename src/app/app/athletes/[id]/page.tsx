@@ -1,3 +1,4 @@
+import { Lock, Plus } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getViewer, requireViewer } from "@/server/auth";
@@ -106,7 +107,7 @@ export default async function AthleteProfile({ params, searchParams }: { params:
         </Section>
 
         <div className="lg:col-span-2">
-          <Section title="نمودار عملکرد فصل" actions={canEdit && <Link href={`/app/performance?athlete=${id}`} className="btn-secondary btn-sm">+ ثبت زمان</Link>}>
+          <Section title="نمودار عملکرد فصل" actions={canEdit && <Link href={`/app/performance?athlete=${id}`} className="btn-secondary btn-sm"><Plus aria-hidden />ثبت زمان</Link>}>
             <PerformanceChart results={perf.chart} refs={perf.refs} />
             {perf.pbs.size > 0 && (
               <div className="mt-4 overflow-x-auto">
@@ -184,7 +185,7 @@ export default async function AthleteProfile({ params, searchParams }: { params:
         </Section>
 
         {canMed && (
-          <Section title="🔒 محدودیت‌های تمرینی / پزشکی (محرمانه)">
+          <Section icon={Lock} title="محدودیت‌های تمرینی / پزشکی (محرمانه)">
             <p className="mb-2 text-xs text-slate-500">دسترسی محدود. فقط اطلاعات لازم برای ایمنی تمرین ثبت شود. این سامانه تشخیص یا درمان پزشکی ارائه نمی‌دهد.</p>
             {medical ? (
               <dl className="grid grid-cols-[7rem_1fr] gap-y-2 text-sm">

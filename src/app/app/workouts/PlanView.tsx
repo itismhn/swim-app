@@ -1,3 +1,4 @@
+import { NotebookPen, Target } from "lucide-react";
 import { INTENSITY_LABEL, SECTION_LABEL, STROKE_LABEL } from "@/lib/domain/labels";
 import { faNum } from "@/lib/domain/jalali";
 import { sectionMeters, setMeters } from "@/lib/domain/volume";
@@ -36,8 +37,8 @@ export function PlanView({ sections }: { sections: SectionV[] }) {
                   {s.sendOffSec ? ` · زمان رفت ${faNum(s.sendOffSec)} ثانیه` : ""}
                   {s.equipment.length ? ` · تجهیزات: ${s.equipment.map((e) => e.name).join("، ")}` : ""}
                 </p>
-                {s.focus && <p className="mt-1 text-xs">🎯 {s.focus}</p>}
-                {s.notes && <p className="mt-1 text-xs text-slate-500">📝 {s.notes}</p>}
+                {s.focus && <p className="mt-1 text-xs"><Target aria-hidden className="inline size-3.5 shrink-0 align-[-2px]" /> {s.focus}</p>}
+                {s.notes && <p className="mt-1 text-xs text-slate-500"><NotebookPen aria-hidden className="inline size-3.5 shrink-0 align-[-2px]" /> {s.notes}</p>}
               </li>
             ))}
           </ul>

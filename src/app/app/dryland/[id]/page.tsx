@@ -1,10 +1,11 @@
+import { NotebookPen, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getViewer, requireViewer } from "@/server/auth";
 import { db } from "@/server/db";
 import { athleteWhere, drylandPlanWhere } from "@/server/authz";
 import { isStaff } from "@/server/viewer";
-import { ActionForm } from "@/components/ActionForm";
+import { ActionForm, FieldError } from "@/components/ActionForm";
 import { PlanBadge } from "@/components/badges";
 import { ExerciseMediaView } from "@/components/ExerciseMedia";
 import { Badge, PageHeader } from "@/components/ui";
@@ -84,8 +85,8 @@ export default async function DrylandPlanPage({ params, searchParams }: { params
                 <div>
                   <p className="font-bold">{faNum(i + 1)}. {it.exercise.name} <span className="text-xs font-normal text-slate-500">· {it.exercise.muscleGroup}</span></p>
                   <p className="text-sm">{faNum(it.sets)} ست{it.reps ? ` × ${faNum(it.reps)} تکرار` : ""}{it.durationSec ? ` × ${faNum(it.durationSec)} ثانیه` : ""}{it.restSec ? ` · استراحت ${faNum(it.restSec)} ثانیه` : ""}</p>
-                  {it.notes && <p className="text-xs text-slate-500">📝 {it.notes}</p>}
-                  {it.exercise.safetyNotes && <p className="mt-1 text-xs text-amber-800">⚠ {it.exercise.safetyNotes}</p>}
+                  {it.notes && <p className="text-xs text-slate-500"><NotebookPen aria-hidden className="inline size-3.5 shrink-0 align-[-2px]" /> {it.notes}</p>}
+                  {it.exercise.safetyNotes && <p className="mt-1 text-xs text-amber-800"><TriangleAlert aria-hidden className="inline size-3.5 shrink-0 align-[-2px]" /> {it.exercise.safetyNotes}</p>}
                   <ExerciseMediaView media={it.exercise.media} name={it.exercise.name} small />
                 </div>
                 {mine && <Badge tone={mine.pain ? "red" : mine.completed ? "green" : "gray"}>{mine.pain ? "درد گزارش شد" : mine.completed ? "انجام شد" : "ناتمام"}</Badge>}
@@ -93,16 +94,16 @@ export default async function DrylandPlanPage({ params, searchParams }: { params
               {v.role === "ATHLETE" && plan.status === "PUBLISHED" && (
                 <ActionForm action={logDryland.bind(null, it.id)} className="mt-3 grid gap-2 border-t border-slate-100 pt-3 sm:grid-cols-4" submitLabel="ثبت" submitClassName="btn-secondary btn-sm">
                   <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="completed" defaultChecked={mine?.completed} /> انجام دادم</label>
-                  <label className="text-sm">سختی (۱–۱۰)<input name="difficulty" className="input min-h-9" inputMode="numeric" defaultValue={mine?.difficulty ?? ""} /></label>
+                  <label className="text-sm">سختی (۱–۱۰)<input name="difficulty" className="input min-h-9" inputMode="numeric" defaultValue={mine?.difficulty ?? ""} /><FieldError name="difficulty" /></label>
                   <label className="flex items-center gap-2 text-sm text-rose-700"><input type="checkbox" name="pain" defaultChecked={mine?.pain} /> درد یا ناراحتی داشتم</label>
-                  <input name="painNote" className="input min-h-9" placeholder="کجا / چه زمانی؟" defaultValue={mine?.painNote ?? ""} aria-label="توضیح درد" />
+                  <input name="painNote" className="input min-h-9" placeholder="کجا / چه زمانی؟" defaultValue={mine?.painNote ?? ""} aria-label="توضیح درد" /><FieldError name="painNote" />
                 </ActionForm>
               )}
               {(staff || v.role === "GUARDIAN") && it.logs.length > 0 && (
                 <ul className="mt-3 space-y-1 border-t border-slate-100 pt-2 text-xs">
                   {it.logs.map((l) => (
                     <li key={l.id} className={l.pain ? "font-medium text-rose-700" : ""}>
-                      {l.athlete.user.name}: {l.completed ? "انجام شد" : "ناتمام"} · سختی {l.difficulty ? faNum(l.difficulty) : "—"}{l.pain ? ` · ⚠ درد: ${l.painNote ?? "بدون توضیح"}` : ""}
+                      {l.athlete.user.name}: {l.completed ? "انجام شد" : "ناتمام"} · سختی {l.difficulty ? faNum(l.difficulty) : "—"}{l.pain ? ` · درد: ${l.painNote ?? "بدون توضیح"}` : ""}
                     </li>
                   ))}
                 </ul>

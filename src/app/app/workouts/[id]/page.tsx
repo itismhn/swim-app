@@ -4,7 +4,7 @@ import { getViewer, requireViewer } from "@/server/auth";
 import { db } from "@/server/db";
 import { athleteWhere, workoutPlanWhere } from "@/server/authz";
 import { isStaff } from "@/server/viewer";
-import { ActionForm } from "@/components/ActionForm";
+import { ActionForm, FieldError } from "@/components/ActionForm";
 import { PlanBadge } from "@/components/badges";
 import { Field, PageHeader, Section } from "@/components/ui";
 import { dateOnlyToJalaliString, faDateTime, faNum } from "@/lib/domain/jalali";
@@ -109,7 +109,7 @@ export default async function WorkoutPage({ params, searchParams }: { params: Pr
                       {c.coachReply && <p className="mt-1 text-brand-700">پاسخ مربی: {c.coachReply}</p>}
                       {staff && (
                         <ActionForm action={replyToCompletion.bind(null, c.id)} className="mt-2 flex items-end gap-2" submitLabel="پاسخ" submitClassName="btn-secondary btn-sm">
-                          <input name="coachReply" className="input min-h-9" placeholder="پاسخ به بازخورد…" aria-label="پاسخ به بازخورد" />
+                          <input name="coachReply" className="input min-h-9" placeholder="پاسخ به بازخورد…" aria-label="پاسخ به بازخورد" /><FieldError name="coachReply" />
                         </ActionForm>
                       )}
                     </li>

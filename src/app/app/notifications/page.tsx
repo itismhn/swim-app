@@ -32,7 +32,7 @@ export default async function Notifications() {
               </div>
               <div className="flex shrink-0 flex-col items-end gap-1">
                 {n.link && <Link href={n.link} className="btn-secondary btn-sm">مشاهده</Link>}
-                {!n.readAt && <form action={async () => { "use server"; await markRead(n.id); }}><button className="text-xs text-brand-600">خوانده شد</button></form>}
+                {!n.readAt && <form action={async () => { "use server"; await markRead(n.id); }}><button className="-my-2 inline-flex min-h-10 items-center px-2 text-xs text-brand-600 dark:text-brand-400">خوانده شد</button></form>}
               </div>
             </li>
           ))}
