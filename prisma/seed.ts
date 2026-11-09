@@ -28,7 +28,16 @@ async function main() {
   if (!password || password.length < 8) throw new Error("Set SEED_DEMO_PASSWORD (min 8 chars) in .env before seeding.");
   const passwordHash = await bcrypt.hash(password, 12);
 
-  // Wipe in dependency order (dev/demo database only).
+  // Safety: this script WIPES the database. Refuse in production, and refuse when real
+  // (non-sample) accounts exist, unless explicitly forced.
+  const force = process.env.ALLOW_DEMO_SEED === "1";
+  if (process.env.NODE_ENV === "production" && !force) throw new Error("Refusing to seed demo data in production (set ALLOW_DEMO_SEED=1 to override).");
+  const realUsers = await db.user.count({ where: { isSample: false } }).catch(() => 0);
+  if (realUsers > 0 && !force) {
+    throw new Error(`Refusing to wipe the database: it contains ${realUsers} real (non-sample) account(s). Set ALLOW_DEMO_SEED=1 to override.`);
+  }
+
+  // Wipe everything (dev/demo database only).
   const tables = await db.$queryRaw<{ tablename: string }[]>`SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename <> '_prisma_migrations'`;
   await db.$executeRawUnsafe(`TRUNCATE ${tables.map((t) => `"${t.tablename}"`).join(",")} RESTART IDENTITY CASCADE`);
 

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireViewer } from "@/server/auth";
+import { getViewer, requireViewer } from "@/server/auth";
 import { db } from "@/server/db";
 import { athleteWhere, workoutPlanWhere } from "@/server/authz";
 import { isStaff } from "@/server/viewer";
@@ -14,6 +14,15 @@ import { Builder } from "../Builder";
 import { PlanView, setLabel } from "../PlanView";
 import { assignableTargets } from "../targets";
 import { logCompletion, replyToCompletion } from "../actions";
+
+/** Title is loaded through the same scoped query, so it never reveals a record the viewer can't see. */
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const v = await getViewer();
+  if (!v) return {};
+  const { id } = await params;
+  const x = await db.workoutPlan.findFirst({ where: { AND: [{ id }, workoutPlanWhere(v)] }, select: { title: true } });
+  return { title: x?.title ?? "یافت نشد" };
+}
 
 export default async function WorkoutPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ edit?: string }> }) {
   const v = await requireViewer();

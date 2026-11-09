@@ -29,7 +29,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <div className="border-t border-slate-100 pt-3 text-sm">
             <p className="font-medium">{v.name}</p>
             <p className="text-xs text-slate-500">{ROLE_LABEL[v.role]}</p>
-            <form action={logoutAction}><button className="mt-2 text-xs text-rose-600">خروج</button></form>
+            <div className="mt-2 flex gap-3 text-xs">
+              <Link href="/app/account" className="text-brand-600">حساب کاربری</Link>
+              <form action={logoutAction}><button className="text-rose-600">خروج</button></form>
+            </div>
           </div>
         </div>
       </aside>
@@ -50,6 +53,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               <summary className="btn-secondary btn-sm list-none">☰ منو</summary>
               <nav className="absolute end-0 z-30 mt-2 w-56 rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
                 {items.map((i) => <Link key={i.href} href={i.href} className="block rounded-lg px-3 py-2 text-sm hover:bg-brand-50">{i.icon} {i.label}</Link>)}
+                <Link href="/app/account" className="block rounded-lg px-3 py-2 text-sm hover:bg-brand-50">👤 حساب کاربری</Link>
                 <form action={logoutAction}><button className="w-full rounded-lg px-3 py-2 text-start text-sm text-rose-600">خروج</button></form>
               </nav>
             </details>

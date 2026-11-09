@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { requireViewer } from "@/server/auth";
+import { getViewer, requireViewer } from "@/server/auth";
 import { db } from "@/server/db";
 import { sessionWhere } from "@/server/authz";
 import { STAFF } from "@/server/viewer";
@@ -8,7 +8,15 @@ import { Empty, PageHeader, Section } from "@/components/ui";
 import { faDateTime } from "@/lib/domain/jalali";
 import { AttendanceSheet } from "../AttendanceSheet";
 
-export const metadata = { title: "حضور و غیاب" };
+
+/** Title is loaded through the same scoped query, so it never reveals a record the viewer can't see. */
+export async function generateMetadata({ params }: { params: Promise<{ sessionId: string }> }) {
+  const v = await getViewer();
+  if (!v) return {};
+  const { sessionId } = await params;
+  const x = await db.trainingSession.findFirst({ where: { AND: [{ id: sessionId }, sessionWhere(v)] }, select: { group: { select: { name: true } } } });
+  return { title: (x ? `حضور و غیاب — ${x.group.name}` : undefined) ?? "یافت نشد" };
+}
 
 export default async function AttendancePage({ params }: { params: Promise<{ sessionId: string }> }) {
   const v = await requireViewer(STAFF);

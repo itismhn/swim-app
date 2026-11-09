@@ -24,12 +24,14 @@
 | `/app/attendance/[sessionId]` | staff (own groups) | Poolside one-tap attendance sheet + edit history |
 | `/app/reports` | staff, athlete, guardian | Weekly / monthly attendance report |
 | `/app/workouts`, `/new`, `/[id]` | staff edit; athletes & guardians read published | In-water plan builder, live volume, drafts, publish, revisions, completion logs & replies |
-| `/app/dryland`, `/[id]` | staff edit; athletes log | Exercise library, dryland plans, completion / difficulty / pain flag |
+| `/app/dryland`, `/new`, `/[id]`, `/[id]?edit=1` | staff edit; athletes log | Exercise library with media upload, dryland plan builder and editing, completion / difficulty / pain flag |
 | `/app/performance` | staff record; athletes & guardians read | Results, PBs, season chart, baseline & target |
 | `/app/nutrition`, `/[id]` | admin (assign), nutritionist (assigned only), athlete, guardian | Education + consultation requests |
 | `/app/messages`, `/[id]` | all | Threads with read/unread, guardian oversight for minors |
 | `/app/notifications` | all | In-app notifications, read/unread |
 | `/app/family` | guardian | Linked athletes, request a link |
+| `/app/account` | all | Change own password, see and sign out other sessions |
+| `/api/exercise-media/[id]` | any signed-in user | Uploaded exercise image/video (401 when signed out) |
 | `/app/admin` | admin | Admin hub |
 | `/app/admin/users` | admin | Users, roles, activation, password reset |
 | `/app/admin/guardians` | admin, head coach | Verify / reject / revoke guardian links |

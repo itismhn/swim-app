@@ -1,3 +1,4 @@
+import { AutoRefresh } from "@/components/AutoRefresh";
 import Link from "next/link";
 import { requireViewer } from "@/server/auth";
 import { db } from "@/server/db";
@@ -24,6 +25,7 @@ export default async function Messages() {
   ]);
   return (
     <>
+      <AutoRefresh seconds={20} />
       <PageHeader title="پیام‌ها" subtitle="گفتگوهای مربوط به ورزشکاران زیر ۱۸ سال با حضور سرپرست تأییدشده انجام می‌شود (قابل تنظیم توسط مدیر)." />
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">

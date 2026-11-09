@@ -1,3 +1,4 @@
+import { AutoRefresh } from "@/components/AutoRefresh";
 import Link from "next/link";
 import { requireViewer } from "@/server/auth";
 import { db } from "@/server/db";
@@ -27,6 +28,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     : <FamilyDash v={v} />;
   return (
     <>
+      <AutoRefresh seconds={60} />
       {denied && <p className="mb-4 rounded-xl bg-rose-50 p-3 text-sm text-rose-800">به صفحه درخواستی دسترسی ندارید.</p>}
       {body}
     </>

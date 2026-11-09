@@ -14,7 +14,9 @@
     "test": "vitest run",
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
-    "test:db:prepare": "dotenv -e .env -- sh -c 'DATABASE_URL=\"$DATABASE_URL_TEST\" prisma migrate deploy'"
+    "test:db:prepare": "dotenv -e .env -- sh -c 'DATABASE_URL=\"$DATABASE_URL_TEST\" prisma migrate deploy'",
+    "create-admin": "tsx scripts/create-admin.ts",
+    "remove-sample-data": "tsx scripts/remove-sample-data.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

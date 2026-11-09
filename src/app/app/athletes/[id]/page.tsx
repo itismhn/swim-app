@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireViewer } from "@/server/auth";
+import { getViewer, requireViewer } from "@/server/auth";
 import { db } from "@/server/db";
-import { canEditAthlete, canEditMedical, canViewMedical, coachNoteWhere, getAthleteForViewer, groupWhere } from "@/server/authz";
+import { canEditAthlete, canEditMedical, canViewMedical, coachNoteWhere, getAthleteForViewer, groupWhere, athleteWhere } from "@/server/authz";
 import { isAcademyWide, isStaff } from "@/server/viewer";
 import { performanceView, eventLabel } from "@/server/performance";
 import { ActionForm } from "@/components/ActionForm";
@@ -15,6 +15,15 @@ import { LINK_STATUS_LABEL, MEMBERSHIP_LABEL, STROKE_LABEL } from "@/lib/domain/
 import { formatDelta, formatTime } from "@/lib/domain/performance";
 import { AthleteFields } from "../AthleteFields";
 import { addCoachNote, saveMedical, updateAthlete } from "../actions";
+
+/** Title is loaded through the same scoped query, so it never reveals a record the viewer can't see. */
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const v = await getViewer();
+  if (!v) return {};
+  const { id } = await params;
+  const x = await db.athlete.findFirst({ where: { AND: [{ id }, athleteWhere(v)] }, select: { user: { select: { name: true } } } });
+  return { title: x?.user.name ?? "یافت نشد" };
+}
 
 export default async function AthleteProfile({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ edit?: string }> }) {
   const v = await requireViewer();

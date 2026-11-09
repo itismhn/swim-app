@@ -1,5 +1,5 @@
 "use client";
-import { useActionState, useEffect, useRef } from "react";
+import { startTransition, useActionState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import type { ActionResult } from "@/lib/action";
 
@@ -42,7 +42,21 @@ export function ActionForm({
   }, [state]);
 
   return (
-    <form ref={ref} action={formAction} className={className} noValidate aria-busy={pending}>
+    <form
+      ref={ref}
+      // `action` keeps the form working before hydration (progressive enhancement).
+      action={formAction}
+      // After hydration we submit manually: React 19 otherwise resets every
+      // uncontrolled field after the action, wiping input on validation errors.
+      onSubmit={(e) => {
+        e.preventDefault();
+        const fd = new FormData(e.currentTarget, (e.nativeEvent as SubmitEvent).submitter);
+        startTransition(() => formAction(fd));
+      }}
+      className={className}
+      noValidate
+      aria-busy={pending}
+    >
       <fieldset disabled={pending} className="contents">
         {children}
       </fieldset>

@@ -15,8 +15,13 @@ Design docs: [sitemap](docs/sitemap.md) · [user journeys](docs/user-journeys.md
   - bcrypt password hashing (cost 12)
   - a random 256-bit token held in an httpOnly, SameSite=Lax cookie (Secure in production); the database stores only its SHA-256 hash
   - server-side expiry
-  - a login throttle
+  - login throttling per account (5 tries / 10 min) and per IP (30 / 10 min)
   - forced re-login when a user's role or password changes or the account is deactivated
+  - users can change their own password and sign out other devices at `/app/account`
+- Other hardening:
+  - a nonce-based Content-Security-Policy on every page
+  - a limit of 120 server actions per user per minute
+  - the public registration form is limited to 5 submissions per IP per hour
 
 ## Install and run
 Requires Node 20+ and a running PostgreSQL server.
@@ -68,6 +73,38 @@ Open http://localhost:3000. Every demo account uses the password you set in `SEE
 | Guardian (verified) | `parent1@example.com` … `parent5@example.com` |
 | Guardian (link still **pending**) | `parent6@example.com` |
 
+## Going live with real data
+The seed script **wipes the database**. It now refuses to run in production, or whenever any real (non-sample) account exists, unless you set `ALLOW_DEMO_SEED=1`.
+
+Create the first real administrator. The password is read from an environment variable so it never appears as a command argument:
+
+```bash
+ADMIN_PASSWORD='a-long-unique-password' npm run create-admin -- admin@your-academy.ir "نام مدیر"
+```
+
+If you started from the demo data, remove every sample account and its data. Real accounts are left untouched:
+
+```bash
+npm run remove-sample-data -- --yes
+```
+
+Then review the public content (programs, FAQ) at `/app/admin/content`.
+
+## Docker deployment
+`docker-compose.yml` runs PostgreSQL, a one-shot migration container, and the app (a Next.js standalone server running as a non-root user, with a health check). Create an env file with at least `POSTGRES_PASSWORD`, then:
+
+```bash
+docker compose --env-file .env.docker up -d --build
+```
+
+Create the first admin inside the tools image:
+
+```bash
+docker compose --env-file .env.docker run --rm -e ADMIN_PASSWORD='a-long-unique-password' migrate npm run create-admin -- admin@your-academy.ir "نام مدیر"
+```
+
+Put a TLS-terminating reverse proxy (Caddy, nginx) in front: in production the session cookie is `Secure`, so login only works over HTTPS (or on `localhost`). The proxy should send `X-Forwarded-Proto: https`. Back up the `pgdata` volume. Uploaded exercise media live in the database, so the database backup covers them too.
+
 Other database commands:
 - `npm run db:reset` drops, re-migrates and re-seeds the dev database.
 - `npm run db:deploy` applies migrations in production.
@@ -96,9 +133,10 @@ npm test
 | `tests/unit/attendance.test.ts` | Attendance rate **excluding cancelled sessions**, the excused-absence option, and sessions with no record |
 | `tests/unit/performance.test.ts` | PBs **only among comparable results** (25 m vs 50 m pools, other strokes and distances), the official-only option, new-PB detection, and time parsing and formatting |
 | `tests/unit/jalali.test.ts` | Jalali↔Gregorian conversion round-trip, invalid dates, and the Tehran offset |
+| `tests/unit/media.test.ts` | Uploads are accepted by file signature only; HTML, SVG and text disguised as images are rejected |
 | `tests/integration/authz.test.ts` | Against the real DB: **athlete X cannot load athlete Y's profile or results**; coach A cannot see, edit, take attendance for or assign plans to group B; a guardian whose link is pending is denied; nutritionists see only requests assigned to them; athletes never see draft plans |
 
-Current result: 28 tests passing. `next build` and `tsc --noEmit` both run clean.
+Current result: 30 tests passing. `next build` and `tsc --noEmit` both run clean.
 
 ## Project structure
 ```
@@ -111,6 +149,10 @@ src/server/action-guard.ts    server-action wrapper: session + role + zod/authz 
 src/server/audit.ts           audit trail
 src/server/notify.ts          in-app notifications
 src/server/notify-external.ts SMS / email stubs (NOT configured)
+src/server/rate-limit.ts      in-memory rate limiter (login, actions, public form)
+src/server/media.ts           upload size + file-signature validation
+src/middleware.ts             nonce-based CSP + redirect of anonymous /app visitors
+src/app/api/exercise-media/   serves uploaded media to signed-in users only
 src/lib/domain/               pure, tested logic: volume, attendance, performance, jalali, labels
 src/lib/workout-schema.ts     shared zod schema for the workout builder
 src/app/(public)/             public website + registration form
@@ -118,6 +160,9 @@ src/app/login/                login / logout
 src/app/app/                  authenticated app (dashboards, athletes, groups, calendar, attendance,
                               workouts, dryland, performance, nutrition, messages, notifications, admin)
 src/components/               ActionForm, UI primitives, PerformanceChart
+scripts/create-admin.ts       create / promote the first real admin
+scripts/remove-sample-data.ts delete all synthetic seed data
+Dockerfile, docker-compose.yml production image + Postgres + migrations
 tests/                        unit + integration tests
 docs/                         sitemap, journeys, permissions, data model
 ```
@@ -152,8 +197,9 @@ docs/                         sitemap, journeys, permissions, data model
   - drafts, publishing to a group or one athlete, and revision history with snapshots
   - athletes log actual metres, RPE and feedback; coaches reply
 - **Dryland:**
-  - an exercise library with muscle group, description, safety notes and an optional https media link
-  - plans for a group or one athlete, with sets, reps, duration, rest and notes
+  - an exercise library with muscle group, description and safety notes, plus an **uploaded image or short MP4** (≤ 4 MB, checked by file signature, served only to signed-in users) or an external https link
+  - plans for a group or one athlete with any number of exercises (up to 20), reorderable, with sets, reps, duration, rest and notes
+  - plans can be **edited after publishing**; rows athletes have already logged are locked so their logs are never lost, and athletes are told the plan changed
   - athletes log completion and difficulty, and can flag pain, which notifies coaches and guardians
   - the app offers no diagnosis or treatment
 - **Nutrition:**
@@ -167,7 +213,7 @@ docs/                         sitemap, journeys, permissions, data model
   - season targets
   - a chart with a reversed axis labelled "lower is better", stars for official races and circles for practice tests, and baseline and target lines
 - **Messaging:**
-  - threads with read/unread state
+  - threads with read/unread state; message pages refresh automatically (thread every 10 s, inbox 20 s, notifications 30 s, dashboard 60 s) while the tab is visible
   - guardians are added automatically to threads with minors (the admin can turn this off)
   - in-app notifications for published plans, schedule changes, new records, replies, messages and pain flags
 - **Dashboards:**
@@ -180,7 +226,8 @@ docs/                         sitemap, journeys, permissions, data model
 - **UX:**
   - RTL Persian throughout, Persian digits, Jalali dates input and displayed in the Tehran time zone
   - responsive layout with a bottom tab bar on phones and 44 px+ tap targets
-  - loading skeletons, error boundary, empty states, inline field errors
+  - loading skeletons, error boundary, empty states, inline field errors (typed input is kept when validation fails)
+  - each detail page has its own browser-tab title, loaded through the same permission check
 - **Security headers:** X-Frame-Options DENY, nosniff, Referrer-Policy and Permissions-Policy; the `x-powered-by` header is disabled.
 
 ## External services and configuration
@@ -193,13 +240,12 @@ docs/                         sitemap, journeys, permissions, data model
 Notifications are **in-app only**. The settings and notification pages say so.
 
 ## Known limitations
-- **External delivery:** there is no SMS, email or push delivery yet.
-- **Login throttling is in memory,** so it works for a single server instance only. Use Redis or similar when running several instances.
-- **Messages and notifications update on navigation or refresh;** there is no real-time push (WebSocket/SSE).
-- **Exercise media are links only;** there is no file upload or storage.
-- **Accounts are created by staff.** There is no self-service sign-up or password-reset email; admins reset passwords. The public form only creates an inquiry.
-- **Timetables can't be imported or exported;** sessions come from the weekly slots or are added by hand. Rescheduling one session doesn't change the weekly pattern.
-- **The dryland plan form is fixed** at six exercise rows per plan, and dryland plans can't be edited after creation (create a new one instead).
+- **External delivery:** there is no SMS, email or push delivery yet. This needs a provider chosen by you (for example an Iranian SMS gateway) and its credentials.
+- **Forgotten passwords:** with no email configured, there is no self-service reset; an admin resets the password. Users can change their own password while signed in.
+- **Rate limits are in memory,** so they work for a single server process only. Use Redis or similar when running several instances.
+- **Updates are periodic, not instant:** pages refresh on a timer (10–60 s) instead of over WebSocket/SSE.
+- **Media size:** uploads are capped at 4 MB and stored in PostgreSQL. For many or long videos, move them to object storage (S3-compatible).
+- **Timetables can't be imported or exported.** Rescheduling one session doesn't change the weekly pattern.
 - **The Tehran offset is hard-coded** as a fixed UTC+03:30, since Iran abolished DST in 2022. Display formatting uses `Intl` with `Asia/Tehran`.
 - **No automated accessibility audit has been run.** The markup does use labels, roles and focus outlines.
-- **Not production-hardened:** no CSP header, no rate limiting beyond login, and no backups or monitoring. Review these before going live.
+- **Operations are up to you:** hosting, TLS, backups and monitoring depend on where you deploy. The Docker setup is a starting point, not a managed service.

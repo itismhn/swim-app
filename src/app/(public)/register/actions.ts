@@ -1,6 +1,8 @@
 "use server";
 import { z } from "zod";
+import { headers } from "next/headers";
 import { db } from "@/server/db";
+import { clientIp, rateLimit } from "@/server/rate-limit";
 import { fromZod, formObject, type ActionResult } from "@/lib/action";
 import { checkbox, int, opt, phone, req } from "@/lib/zod-fa";
 
@@ -17,6 +19,9 @@ const schema = z.object({
 });
 
 export async function submitInquiry(_: ActionResult, fd: FormData): Promise<ActionResult> {
+  if (!rateLimit(`inquiry:${clientIp(await headers())}`, 5, 60 * 60 * 1000).ok) {
+    return { ok: false, message: "تعداد درخواست‌ها از این دستگاه زیاد است. لطفاً بعداً تلاش کنید یا تماس بگیرید." };
+  }
   const parsed = schema.safeParse(formObject(fd));
   if (!parsed.success) return fromZod(parsed.error);
   const { website: _hp, ...data } = parsed.data;

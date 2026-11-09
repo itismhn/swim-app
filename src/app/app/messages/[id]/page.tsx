@@ -1,5 +1,6 @@
+import { AutoRefresh } from "@/components/AutoRefresh";
 import { notFound } from "next/navigation";
-import { requireViewer } from "@/server/auth";
+import { getViewer, requireViewer } from "@/server/auth";
 import { db } from "@/server/db";
 import { threadWhere } from "@/server/authz";
 import { ActionForm } from "@/components/ActionForm";
@@ -7,6 +8,15 @@ import { PageHeader } from "@/components/ui";
 import { faDateTime } from "@/lib/domain/jalali";
 import { ROLE_LABEL } from "@/lib/domain/labels";
 import { sendMessage } from "../actions";
+
+/** Title is loaded through the same scoped query, so it never reveals a record the viewer can't see. */
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const v = await getViewer();
+  if (!v) return {};
+  const { id } = await params;
+  const x = await db.thread.findFirst({ where: { AND: [{ id }, threadWhere(v)] }, select: { subject: true } });
+  return { title: x?.subject ?? "یافت نشد" };
+}
 
 export default async function Thread({ params }: { params: Promise<{ id: string }> }) {
   const v = await requireViewer();
@@ -25,6 +35,7 @@ export default async function Thread({ params }: { params: Promise<{ id: string 
 
   return (
     <>
+      <AutoRefresh seconds={10} />
       <PageHeader title={t.subject} subtitle={t.participants.map((p) => `${p.user.name} (${ROLE_LABEL[p.user.role]})`).join("، ")} />
       {oversight.length > 0 && <p className="mb-3 rounded-xl bg-violet-50 p-2 text-xs text-violet-800">👁 نظارت سرپرست فعال است: {oversight.map((p) => p.user.name).join("، ")} همه پیام‌ها را می‌بیند.</p>}
       <ul className="space-y-2">

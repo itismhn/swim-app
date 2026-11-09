@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireViewer } from "@/server/auth";
+import { getViewer, requireViewer } from "@/server/auth";
 import { db } from "@/server/db";
 import { groupWhere } from "@/server/authz";
 import { STAFF } from "@/server/viewer";
@@ -9,6 +9,15 @@ import { Badge, Field, PageHeader, Section } from "@/components/ui";
 import { MEMBERSHIP_LABEL, WEEKDAY_LABEL } from "@/lib/domain/labels";
 import { faNum } from "@/lib/domain/jalali";
 import { addSlot, generateSessions, removeSlot, setGroupCoach, updateGroup } from "../actions";
+
+/** Title is loaded through the same scoped query, so it never reveals a record the viewer can't see. */
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const v = await getViewer();
+  if (!v) return {};
+  const { id } = await params;
+  const x = await db.group.findFirst({ where: { AND: [{ id }, groupWhere(v)] }, select: { name: true } });
+  return { title: x?.name ?? "یافت نشد" };
+}
 
 export default async function GroupPage({ params }: { params: Promise<{ id: string }> }) {
   const v = await requireViewer(STAFF);

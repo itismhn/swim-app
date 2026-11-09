@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { requireViewer } from "@/server/auth";
+import { getViewer, requireViewer } from "@/server/auth";
 import { db } from "@/server/db";
 import { canSeeNutritionAllergies, nutritionRequestWhere } from "@/server/authz";
 import { ActionForm } from "@/components/ActionForm";
@@ -7,6 +7,15 @@ import { Badge, Field, PageHeader, Section } from "@/components/ui";
 import { REQUEST_STATUS_LABEL } from "@/lib/domain/labels";
 import { faDateTime } from "@/lib/domain/jalali";
 import { assignNutrition, replyNutrition } from "../actions";
+
+/** Title is loaded through the same scoped query, so it never reveals a record the viewer can't see. */
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const v = await getViewer();
+  if (!v) return {};
+  const { id } = await params;
+  const x = await db.nutritionRequest.findFirst({ where: { AND: [{ id }, nutritionRequestWhere(v)] }, select: { topic: true } });
+  return { title: x?.topic ?? "یافت نشد" };
+}
 
 export default async function NutritionRequestPage({ params }: { params: Promise<{ id: string }> }) {
   const v = await requireViewer(["ADMIN", "NUTRITIONIST", "ATHLETE", "GUARDIAN"]);

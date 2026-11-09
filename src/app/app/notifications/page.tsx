@@ -1,3 +1,4 @@
+import { AutoRefresh } from "@/components/AutoRefresh";
 import Link from "next/link";
 import { requireViewer } from "@/server/auth";
 import { db } from "@/server/db";
@@ -14,6 +15,7 @@ export default async function Notifications() {
   const ext = externalChannelsStatus();
   return (
     <>
+      <AutoRefresh seconds={30} />
       <PageHeader
         title="اعلان‌ها"
         subtitle={`اعلان‌ها فقط داخل سامانه ارسال می‌شوند. پیامک: ${ext.sms.configured ? "فعال" : "پیکربندی نشده"} · ایمیل: ${ext.email.configured ? "فعال" : "پیکربندی نشده"}`}

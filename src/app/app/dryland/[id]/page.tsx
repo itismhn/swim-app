@@ -1,29 +1,66 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireViewer } from "@/server/auth";
+import { getViewer, requireViewer } from "@/server/auth";
 import { db } from "@/server/db";
 import { athleteWhere, drylandPlanWhere } from "@/server/authz";
 import { isStaff } from "@/server/viewer";
 import { ActionForm } from "@/components/ActionForm";
 import { PlanBadge } from "@/components/badges";
+import { ExerciseMediaView } from "@/components/ExerciseMedia";
 import { Badge, PageHeader } from "@/components/ui";
 import { dateOnlyToJalaliString, faNum } from "@/lib/domain/jalali";
 import { logDryland, publishDryland } from "../actions";
+import { DrylandBuilder } from "../DrylandBuilder";
+import { assignableTargets } from "../../workouts/targets";
 
-export default async function DrylandPlanPage({ params }: { params: Promise<{ id: string }> }) {
+/** Title is loaded through the same scoped query, so it never reveals a record the viewer can't see. */
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const v = await getViewer();
+  if (!v) return {};
+  const { id } = await params;
+  const x = await db.drylandPlan.findFirst({ where: { AND: [{ id }, drylandPlanWhere(v)] }, select: { title: true } });
+  return { title: x?.title ?? "یافت نشد" };
+}
+
+export default async function DrylandPlanPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ edit?: string }> }) {
   const v = await requireViewer();
   const { id } = await params;
+  const { edit } = await searchParams;
   const plan = await db.drylandPlan.findFirst({
     where: { AND: [{ id }, drylandPlanWhere(v)] },
     include: {
       group: { select: { name: true } }, athlete: { select: { user: { select: { name: true } } } },
       items: {
         orderBy: { order: "asc" },
-        include: { exercise: true, logs: { where: { athlete: athleteWhere(v) }, include: { athlete: { select: { user: { select: { name: true } } } } } } },
+        include: { exercise: { include: { media: { select: { id: true, mime: true } } } }, logs: { where: { athlete: athleteWhere(v) }, include: { athlete: { select: { user: { select: { name: true } } } } } } },
       },
     },
   });
   if (!plan) notFound();
   const staff = isStaff(v);
+  if (staff && edit) {
+    const [targets, exercises, logCounts] = await Promise.all([
+      assignableTargets(v),
+      db.exercise.findMany({ select: { id: true, name: true, muscleGroup: true }, orderBy: { name: "asc" } }),
+      db.drylandLog.groupBy({ by: ["itemId"], where: { item: { planId: id } }, _count: true }),
+    ]);
+    const locked = new Set(logCounts.map((l) => l.itemId));
+    return (
+      <>
+        <PageHeader title={`ویرایش: ${plan.title}`} actions={<Link href={`/app/dryland/${id}`} className="btn-secondary">انصراف</Link>} />
+        <DrylandBuilder
+          planId={id}
+          targets={targets}
+          exercises={exercises}
+          published={plan.status === "PUBLISHED"}
+          initial={{
+            title: plan.title, target: plan.groupId ? `group:${plan.groupId}` : `athlete:${plan.athleteId}`, date: dateOnlyToJalaliString(plan.date), notes: plan.notes ?? "",
+            items: plan.items.map((it) => ({ id: it.id, exerciseId: it.exerciseId, sets: it.sets, reps: it.reps, durationSec: it.durationSec, restSec: it.restSec, notes: it.notes ?? "", locked: locked.has(it.id) })),
+          }}
+        />
+      </>
+    );
+  }
   const me = v.role === "ATHLETE" ? await db.athlete.findUnique({ where: { userId: v.id }, select: { id: true } }) : null;
 
   return (
@@ -31,7 +68,10 @@ export default async function DrylandPlanPage({ params }: { params: Promise<{ id
       <PageHeader
         title={plan.title}
         subtitle={<>{dateOnlyToJalaliString(plan.date)} · {plan.group?.name ?? plan.athlete?.user.name} <PlanBadge s={plan.status} /></>}
-        actions={staff && plan.status === "DRAFT" && <form action={async () => { "use server"; await publishDryland(id); }}><button className="btn-primary">انتشار</button></form>}
+        actions={staff && <>
+          <Link href={`/app/dryland/${id}?edit=1`} className="btn-secondary">ویرایش</Link>
+          {plan.status === "DRAFT" && <form action={async () => { "use server"; await publishDryland(id); }}><button className="btn-primary">انتشار</button></form>}
+        </>}
       />
       <p className="mb-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">در صورت احساس درد یا ناراحتی، حرکت را متوقف کنید و آن را علامت بزنید. این سامانه تشخیص یا درمان پزشکی ارائه نمی‌دهد؛ مربی برای بررسی با خانواده تماس می‌گیرد.</p>
       {plan.notes && <p className="card mb-4 text-sm">{plan.notes}</p>}
@@ -46,6 +86,7 @@ export default async function DrylandPlanPage({ params }: { params: Promise<{ id
                   <p className="text-sm">{faNum(it.sets)} ست{it.reps ? ` × ${faNum(it.reps)} تکرار` : ""}{it.durationSec ? ` × ${faNum(it.durationSec)} ثانیه` : ""}{it.restSec ? ` · استراحت ${faNum(it.restSec)} ثانیه` : ""}</p>
                   {it.notes && <p className="text-xs text-slate-500">📝 {it.notes}</p>}
                   {it.exercise.safetyNotes && <p className="mt-1 text-xs text-amber-800">⚠ {it.exercise.safetyNotes}</p>}
+                  <ExerciseMediaView media={it.exercise.media} name={it.exercise.name} small />
                 </div>
                 {mine && <Badge tone={mine.pain ? "red" : mine.completed ? "green" : "gray"}>{mine.pain ? "درد گزارش شد" : mine.completed ? "انجام شد" : "ناتمام"}</Badge>}
               </div>

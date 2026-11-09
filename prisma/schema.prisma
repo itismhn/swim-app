@@ -2,7 +2,9 @@
 // the UI renders them in the Asia/Tehran zone with the Jalali calendar.
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // native = dev machine; musl targets = Alpine Docker image on x86-64 and ARM servers
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x", "linux-musl-arm64-openssl-3.0.x"]
 }
 
 datasource db {
@@ -508,6 +510,20 @@ model Exercise {
   safetyNotes String?
   mediaUrl    String?
   items       DrylandItem[]
+  media       ExerciseMedia?
+}
+
+/// Uploaded image / short video for an exercise. Stored in the DB (no external storage needed)
+/// and served only to signed-in users via /api/exercise-media/[id].
+model ExerciseMedia {
+  id          String   @id @default(cuid())
+  exerciseId  String   @unique
+  exercise    Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  mime        String
+  size        Int
+  data        Bytes
+  uploadedBy  String
+  createdAt   DateTime @default(now())
 }
 
 model DrylandPlan {

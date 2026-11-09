@@ -24,6 +24,8 @@ Legend: **R** read · **W** create/edit · **—** no access · *scope* in paren
 | Guardian link verification | W | W | — | — | — | request only |
 | Seasons, milestones, competitions | W | W (milestones, competitions) | R via dashboards | — | — | — |
 | Public content, inquiries | W | R inquiries | — | — | — | — |
+| Exercise library & media upload | W | W | W | — | R | R |
+| Own password & sessions | W | W | W | W | W | W |
 | Audit log | R | — | — | — | — | — |
 
 \* Staff may update existing medical data; the first record must come from a verified guardian giving consent. The values are never copied into the audit log.

@@ -1,0 +1,40 @@
+# Local / single-server deployment: PostgreSQL + migrations + app.
+#   cp .env.example .env.docker   (set POSTGRES_PASSWORD)
+#   docker compose --env-file .env.docker up -d --build
+# Put a TLS-terminating reverse proxy (Caddy, nginx, …) in front for production.
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: swim
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: swim
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U swim -d swim"]
+      interval: 5s
+      retries: 10
+
+  migrate:
+    build: { context: ., target: tools }
+    environment:
+      DATABASE_URL: postgresql://swim:${POSTGRES_PASSWORD}@db:5432/swim?schema=public
+    depends_on:
+      db: { condition: service_healthy }
+    restart: "no"
+
+  app:
+    build: { context: ., target: runner }
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://swim:${POSTGRES_PASSWORD}@db:5432/swim?schema=public
+      SESSION_TTL_HOURS: ${SESSION_TTL_HOURS:-72}
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+
+volumes:
+  pgdata:
