@@ -1,0 +1,717 @@
+// Swim academy data model. All timestamps are stored in UTC (timestamptz);
+// the UI renders them in the Asia/Tehran zone with the Jalali calendar.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ───────────── Enums ─────────────
+
+enum Role {
+  ADMIN
+  HEAD_COACH
+  COACH
+  NUTRITIONIST
+  ATHLETE
+  GUARDIAN
+}
+
+enum Stroke {
+  FREESTYLE
+  BACKSTROKE
+  BREASTSTROKE
+  BUTTERFLY
+  IM
+  CHOICE
+}
+
+enum MembershipStatus {
+  ACTIVE
+  PAUSED
+  TRIAL
+  LEFT
+}
+
+enum LinkStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum NoteVisibility {
+  STAFF_ONLY
+  SHARED
+}
+
+enum SessionStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  EXCUSED
+  LATE
+  LEFT_EARLY
+}
+
+enum PlanStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum SectionKind {
+  WARMUP
+  TECHNIQUE
+  KICK_PULL
+  MAIN
+  SKILLS
+  COOLDOWN
+}
+
+enum Intensity {
+  EASY
+  AEROBIC
+  THRESHOLD
+  VO2
+  SPRINT
+  RECOVERY
+  TECHNIQUE
+}
+
+enum Course {
+  SCM // 25 m
+  LCM // 50 m
+  SCY // 25 yd
+}
+
+enum ResultType {
+  OFFICIAL
+  PRACTICE_TEST
+}
+
+enum RequestStatus {
+  OPEN
+  IN_PROGRESS
+  ANSWERED
+  CLOSED
+}
+
+enum InquiryKind {
+  REGISTRATION
+  CONSULTATION
+}
+
+// ───────────── Users & access ─────────────
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  phone        String?
+  role         Role
+  active       Boolean  @default(true)
+  isSample     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  sessions          Session[]
+  athlete           Athlete?
+  coachGroups       GroupCoach[]
+  guardianLinks     GuardianLink[]       @relation("GuardianLinks")
+  notifications     Notification[]
+  threadMemberships ThreadParticipant[]
+  messages          Message[]
+  auditLogs         AuditLog[]
+  coachNotes        CoachNote[]
+  nutritionAssigned NutritionRequest[]   @relation("NutritionAssignee")
+  nutritionAsked    NutritionRequest[]   @relation("NutritionSubmitter")
+  nutritionReplies  NutritionReply[]
+  attendanceRecords Attendance[]
+  resultsRecorded   PerformanceResult[]
+  workoutPlans      WorkoutPlan[]
+  drylandPlans      DrylandPlan[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  userAgent String?
+
+  @@index([userId])
+}
+
+model AuditLog {
+  id       String   @id @default(cuid())
+  actorId  String?
+  actor    User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  action   String
+  entity   String
+  entityId String?
+  before   Json?
+  after    Json?
+  at       DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([at])
+}
+
+model AcademySetting {
+  id                       Int      @id @default(1)
+  academyName              String   @default("آکادمی شنا")
+  poolLengthMeters         Int      @default(25)
+  sessionsPerWeek          Int      @default(3)
+  sessionMinutes           Int      @default(120)
+  guardianOversightMinors  Boolean  @default(true)
+  countExcusedAsAbsent     Boolean  @default(false)
+  contactPhone             String?
+  contactEmail             String?
+  contactAddress           String?
+  updatedAt                DateTime @updatedAt
+}
+
+// ───────────── Groups & athletes ─────────────
+
+model Group {
+  id          String   @id @default(cuid())
+  name        String
+  level       String?
+  location    String?
+  description String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  coaches      GroupCoach[]
+  athletes     Athlete[]
+  slots        WeeklySlot[]
+  sessions     TrainingSession[]
+  workoutPlans WorkoutPlan[]
+  drylandPlans DrylandPlan[]
+}
+
+model GroupCoach {
+  groupId String
+  userId  String
+  isLead  Boolean @default(false)
+  group   Group   @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, userId])
+}
+
+model WeeklySlot {
+  id        String @id @default(cuid())
+  groupId   String
+  group     Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  weekday   Int // 0 = Saturday … 6 = Friday (Iranian week)
+  startTime String // "HH:MM" in Asia/Tehran
+  minutes   Int
+  location  String?
+}
+
+model Athlete {
+  id               String           @id @default(cuid())
+  userId           String           @unique
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  birthDate        DateTime         @db.Date
+  groupId          String?
+  group            Group?           @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  enrolledAt       DateTime         @db.Date
+  status           MembershipStatus @default(ACTIVE)
+  specialtyStrokes Stroke[]
+  secondaryStrokes Stroke[]
+  trainingGoals    String?
+  seasonGoals      String?
+  emergencyName    String?
+  emergencyPhone   String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  medical            AthleteMedical?
+  guardianLinks      GuardianLink[]
+  notes              CoachNote[]
+  attendance         Attendance[]
+  results            PerformanceResult[]
+  targets            SeasonTarget[]
+  workoutPlans       WorkoutPlan[]
+  workoutCompletions WorkoutCompletion[]
+  drylandPlans       DrylandPlan[]
+  drylandLogs        DrylandLog[]
+  nutritionRequests  NutritionRequest[]
+  threads            Thread[]
+
+  @@index([groupId])
+}
+
+/// Restricted medical / training-restriction info. Exists only with guardian consent.
+model AthleteMedical {
+  athleteId           String   @id
+  athlete             Athlete  @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  trainingRestrictions String?
+  allergies           String?
+  guardianConsentAt   DateTime
+  consentByUserId     String
+  updatedAt           DateTime @updatedAt
+}
+
+model GuardianLink {
+  id           String     @id @default(cuid())
+  guardianId   String
+  guardian     User       @relation("GuardianLinks", fields: [guardianId], references: [id], onDelete: Cascade)
+  athleteId    String
+  athlete      Athlete    @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  relation     String
+  status       LinkStatus @default(PENDING)
+  verifiedById String?
+  verifiedAt   DateTime?
+  createdAt    DateTime   @default(now())
+
+  @@unique([guardianId, athleteId])
+}
+
+model CoachNote {
+  id         String         @id @default(cuid())
+  athleteId  String
+  athlete    Athlete        @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  authorId   String
+  author     User           @relation(fields: [authorId], references: [id])
+  visibility NoteVisibility @default(STAFF_ONLY)
+  body       String
+  createdAt  DateTime       @default(now())
+}
+
+// ───────────── Seasons ─────────────
+
+model Season {
+  id        String   @id @default(cuid())
+  name      String
+  startDate DateTime @db.Date
+  endDate   DateTime @db.Date
+  goals     String?
+  active    Boolean  @default(false)
+
+  milestones   Milestone[]
+  competitions Competition[]
+  targets      SeasonTarget[]
+}
+
+model Milestone {
+  id          String  @id @default(cuid())
+  seasonId    String
+  season      Season  @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  week        Int
+  title       String
+  description String?
+}
+
+model Competition {
+  id       String   @id @default(cuid())
+  seasonId String?
+  season   Season?  @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  name     String
+  date     DateTime @db.Date
+  venue    String?
+  course   Course   @default(SCM)
+  isTarget Boolean  @default(false)
+}
+
+model SeasonTarget {
+  id        String  @id @default(cuid())
+  seasonId  String
+  season    Season  @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  athleteId String
+  athlete   Athlete @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  stroke    Stroke
+  distance  Int
+  course    Course
+  timeMs    Int
+
+  @@unique([seasonId, athleteId, stroke, distance, course])
+}
+
+// ───────────── Sessions & attendance ─────────────
+
+model TrainingSession {
+  id        String        @id @default(cuid())
+  groupId   String
+  group     Group         @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  startsAt  DateTime
+  minutes   Int
+  location  String?
+  status    SessionStatus @default(SCHEDULED)
+  note      String?
+  createdAt DateTime      @default(now())
+
+  attendance   Attendance[]
+  workoutPlans WorkoutPlan[]
+
+  @@index([groupId, startsAt])
+}
+
+model Attendance {
+  id           String           @id @default(cuid())
+  sessionId    String
+  session      TrainingSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  athleteId    String
+  athlete      Athlete          @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  status       AttendanceStatus
+  note         String?
+  recordedById String
+  recordedBy   User             @relation(fields: [recordedById], references: [id])
+  recordedAt   DateTime         @default(now())
+
+  history AttendanceHistory[]
+
+  @@unique([sessionId, athleteId])
+}
+
+model AttendanceHistory {
+  id           String            @id @default(cuid())
+  attendanceId String
+  attendance   Attendance        @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+  fromStatus   AttendanceStatus?
+  toStatus     AttendanceStatus
+  note         String?
+  changedById  String
+  changedAt    DateTime          @default(now())
+}
+
+// ───────────── In-water workouts ─────────────
+
+model Equipment {
+  id      String         @id @default(cuid())
+  key     String         @unique
+  name    String
+  builtIn Boolean        @default(false)
+  sets    SetEquipment[]
+}
+
+model WorkoutPlan {
+  id            String       @id @default(cuid())
+  title         String
+  groupId       String?
+  group         Group?       @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  athleteId     String?
+  athlete       Athlete?     @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  sessionId     String?
+  session       TrainingSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  date          DateTime     @db.Date
+  poolLength    Int          @default(25)
+  status        PlanStatus   @default(DRAFT)
+  version       Int          @default(1)
+  plannedMeters Int          @default(0)
+  notes         String?
+  authorId      String
+  author        User         @relation(fields: [authorId], references: [id])
+  publishedAt   DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  sections    WorkoutSection[]
+  revisions   WorkoutPlanRevision[]
+  completions WorkoutCompletion[]
+}
+
+model WorkoutPlanRevision {
+  id        String      @id @default(cuid())
+  planId    String
+  plan      WorkoutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  version   Int
+  status    PlanStatus
+  snapshot  Json
+  authorId  String
+  createdAt DateTime    @default(now())
+}
+
+model WorkoutSection {
+  id     String       @id @default(cuid())
+  planId String
+  plan   WorkoutPlan  @relation(fields: [planId], references: [id], onDelete: Cascade)
+  kind   SectionKind
+  order  Int
+  title  String?
+  sets   WorkoutSet[]
+}
+
+model WorkoutSet {
+  id        String         @id @default(cuid())
+  sectionId String
+  section   WorkoutSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  order     Int
+  rounds    Int            @default(1)
+  reps      Int
+  stroke    Stroke
+  intensity Intensity
+  restSec   Int?
+  sendOffSec Int?
+  focus     String?
+  notes     String?
+  segments  SetSegment[]
+  equipment SetEquipment[]
+}
+
+/// One rep may be composed of several segments, e.g. 20 m fast + 5 m easy.
+model SetSegment {
+  id          String     @id @default(cuid())
+  setId       String
+  set         WorkoutSet @relation(fields: [setId], references: [id], onDelete: Cascade)
+  order       Int
+  meters      Int
+  stroke      Stroke?
+  description String?
+}
+
+model SetEquipment {
+  setId       String
+  equipmentId String
+  set         WorkoutSet @relation(fields: [setId], references: [id], onDelete: Cascade)
+  equipment   Equipment  @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+
+  @@id([setId, equipmentId])
+}
+
+model WorkoutCompletion {
+  id           String      @id @default(cuid())
+  planId       String
+  plan         WorkoutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  athleteId    String
+  athlete      Athlete     @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  actualMeters Int
+  rpe          Int?
+  feedback     String?
+  coachReply   String?
+  createdAt    DateTime    @default(now())
+
+  @@unique([planId, athleteId])
+}
+
+// ───────────── Dryland ─────────────
+
+model Exercise {
+  id          String        @id @default(cuid())
+  name        String
+  muscleGroup String
+  description String?
+  safetyNotes String?
+  mediaUrl    String?
+  items       DrylandItem[]
+}
+
+model DrylandPlan {
+  id          String        @id @default(cuid())
+  title       String
+  groupId     String?
+  group       Group?        @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  athleteId   String?
+  athlete     Athlete?      @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  date        DateTime      @db.Date
+  status      PlanStatus    @default(DRAFT)
+  notes       String?
+  authorId    String
+  author      User          @relation(fields: [authorId], references: [id])
+  createdAt   DateTime      @default(now())
+  items       DrylandItem[]
+}
+
+model DrylandItem {
+  id          String       @id @default(cuid())
+  planId      String
+  plan        DrylandPlan  @relation(fields: [planId], references: [id], onDelete: Cascade)
+  exerciseId  String
+  exercise    Exercise     @relation(fields: [exerciseId], references: [id])
+  order       Int
+  sets        Int
+  reps        Int?
+  durationSec Int?
+  restSec     Int?
+  notes       String?
+  logs        DrylandLog[]
+}
+
+model DrylandLog {
+  id         String      @id @default(cuid())
+  itemId     String
+  item       DrylandItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  athleteId  String
+  athlete    Athlete     @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  completed  Boolean
+  difficulty Int?
+  pain       Boolean     @default(false)
+  painNote   String?
+  createdAt  DateTime    @default(now())
+
+  @@unique([itemId, athleteId])
+}
+
+// ───────────── Nutrition ─────────────
+
+model NutritionArticle {
+  id        String   @id @default(cuid())
+  title     String
+  summary   String
+  body      String
+  published Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model NutritionRequest {
+  id              String          @id @default(cuid())
+  athleteId       String
+  athlete         Athlete         @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  submittedById   String
+  submittedBy     User            @relation("NutritionSubmitter", fields: [submittedById], references: [id])
+  assigneeId      String?
+  assignee        User?           @relation("NutritionAssignee", fields: [assigneeId], references: [id])
+  topic           String
+  question        String
+  allergies       String?
+  guardianConsent Boolean         @default(false)
+  status          RequestStatus   @default(OPEN)
+  createdAt       DateTime        @default(now())
+  replies         NutritionReply[]
+}
+
+model NutritionReply {
+  id        String           @id @default(cuid())
+  requestId String
+  request   NutritionRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User             @relation(fields: [authorId], references: [id])
+  body      String
+  createdAt DateTime         @default(now())
+}
+
+// ───────────── Performance ─────────────
+
+model PerformanceResult {
+  id           String     @id @default(cuid())
+  athleteId    String
+  athlete      Athlete    @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  stroke       Stroke
+  distance     Int
+  course       Course
+  timeMs       Int
+  date         DateTime   @db.Date
+  venue        String?
+  type         ResultType
+  isBaseline   Boolean    @default(false)
+  splitsMs     Int[]
+  notes        String?
+  recordedById String
+  recordedBy   User       @relation(fields: [recordedById], references: [id])
+  createdAt    DateTime   @default(now())
+
+  @@index([athleteId, stroke, distance, course])
+}
+
+// ───────────── Messaging ─────────────
+
+model Thread {
+  id           String              @id @default(cuid())
+  subject      String
+  athleteId    String?
+  athlete      Athlete?            @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  participants ThreadParticipant[]
+  messages     Message[]
+}
+
+model ThreadParticipant {
+  threadId   String
+  userId     String
+  thread     Thread    @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastReadAt DateTime?
+  /// true when the guardian was auto-added by the minor-oversight rule
+  oversight  Boolean   @default(false)
+
+  @@id([threadId, userId])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  threadId  String
+  thread    Thread   @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([threadId, createdAt])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  body      String?
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, readAt])
+}
+
+// ───────────── Public website content (no private data) ─────────────
+
+model PublicCoachProfile {
+  id        String  @id @default(cuid())
+  name      String
+  title     String
+  bio       String
+  order     Int     @default(0)
+  published Boolean @default(true)
+}
+
+model PublicGroupInfo {
+  id          String  @id @default(cuid())
+  name        String
+  ageRange    String
+  description String
+  schedule    String
+  order       Int     @default(0)
+}
+
+model Program {
+  id          String  @id @default(cuid())
+  title       String
+  description String
+  order       Int     @default(0)
+}
+
+model Faq {
+  id       String @id @default(cuid())
+  question String
+  answer   String
+  order    Int    @default(0)
+}
+
+model InquiryRequest {
+  id           String        @id @default(cuid())
+  kind         InquiryKind
+  guardianName String
+  phone        String
+  email        String?
+  swimmerAge   Int
+  experience   String?
+  message      String?
+  consent      Boolean
+  status       RequestStatus @default(OPEN)
+  createdAt    DateTime      @default(now())
+}
